@@ -1,0 +1,26 @@
+import rclpy
+from rclpy.node import Node
+from dynamixel_sdk import *
+import time
+
+class SnakeRobotControl(Node):
+    def __init__(self):
+        super().__init__('snake_robot_control')
+        port = PortHandler(DEVICE_NAME)
+        packet_handler = PacketHandler(PROTOCOL_VERSION)
+        port.openPort()
+        port.setBaudRate(BAUDRATE)
+        dynamixel = Dynamixel(port, packet_handler, DXL_ID)
+        dynamixel.setOperatingMode(OPERATING_MODE)
+        dynamixel.setGoalPosition(GOAL_POSITION)
+
+def main(args=None):
+    rclpy.init(args=args)
+    node = SnakeRobotControl()
+    rclpy.spin(node)
+    node.destroy_node()
+    rclpy.shutdown()
+
+if __name__ == '__main__':
+    main()
+
