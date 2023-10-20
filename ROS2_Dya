@@ -1,0 +1,63 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <rcl.h>
+#include <dynamixel_sdk.h>
+
+#define PROTOCOL_VERSION 2.0
+#define DXL_ID 1             // Modify this to your Dynamixel motor's ID
+#define BAUDRATE 57600       // Modify this to your motor's baud rate
+#define DEVICENAME "/dev/ttyUSB0" // Modify this to your USB port
+
+int main(int argc, char *argv[])
+{    rclcpp_init(argc, argv);
+    dynamixel::PortHandler *port_handler = dynamixel::PortHandler::getPortHandler(DEVICENAME);
+    dynamixel::PacketHandler *packet_handler = dynamixel::PacketHandler::getPacketHandler(PROTOCOL_VERSION);
+    if (port_handler->openPort())
+    { port_handler->setBaudRate(BAUDRATE);
+        int dxl_comm_result;
+        // Disable torque
+        dxl_comm_result = packet_handler->write1ByteTxRx(port_handler, DXL_ID, 24, 0);
+        if (dxl_comm_result == COMM_SUCCESS)
+        {
+            printf("Torque disabled.\n");
+        }
+        else
+        {
+            printf("Failed to disable torque: %s\n", packet_handler->getTxRxResult(dxl_comm_result));
+            return 1;
+        }
+        // Set goal position (e.g., 512)
+        int goal_position = 512;
+        dxl_comm_result = packet_handler->write2ByteTxRx(port_handler, DXL_ID, 30, goal_position);
+        if (dxl_comm_result == COMM_SUCCESS)
+        {
+            printf("Goal position set to %d.\n", goal_position);
+        }
+        else
+        {
+            printf("Failed to set goal position: %s\n", packet_handler->getTxRxResult(dxl_comm_result));
+            return 1;
+        }
+        // Enable torque
+        dxl_comm_result = packet_handler->write1ByteTxRx(port_handler, DXL_ID, 24, 1);
+        if (dxl_comm_result == COMM_SUCCESS)
+        {
+            printf("Torque enabled.\n");
+        }
+        else
+        {
+            printf("Failed to enable torque: %s\n", packet_handler->getTxRxResult(dxl_comm_result));
+            return 1;
+        }
+        // Close the port
+        port_handler->closePort();
+    }
+    else
+    {
+        printf("Failed to open port.\n");
+        return 1;
+    }
+    rclcpp_shutdown();
+    return 0;
+}
